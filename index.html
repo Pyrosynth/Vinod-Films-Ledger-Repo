@@ -673,7 +673,7 @@
     }
 
     async function saveToDrive(ledgerArray) {
-      if (!accessToken) return; // Fail silently if not logged in; local storage still works.
+      if (!accessToken) return; 
 
       const fileContent = JSON.stringify(ledgerArray);
       const fileMetadata = {
@@ -681,13 +681,14 @@
         mimeType: 'application/json'
       };
 
-      const boundary = '-------314159265358979323846';
+      // FIX: Removed the dashes from the base boundary string to prevent mismatch
+      const boundary = 'vinod_films_data_boundary_3141592653589793';
       const delimiter = "\r\n--" + boundary + "\r\n";
       const close_delim = "\r\n--" + boundary + "--";
 
       const multipartRequestBody =
         delimiter +
-        'Content-Type: application/json\r\n\r\n' +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
         JSON.stringify(fileMetadata) +
         delimiter +
         'Content-Type: application/json\r\n\r\n' +
@@ -707,10 +708,17 @@
           method: method,
           headers: {
             'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': `multipart/related; boundary="${boundary.substring(2)}"`
+            // FIX: Use the exact boundary without substring modifications
+            'Content-Type': `multipart/related; boundary="${boundary}"`
           },
           body: multipartRequestBody
         });
+
+        if (!response.ok) {
+           console.error("Drive API Error:", await response.text());
+           showToast('Drive API Error. Check console.', 'error');
+           return;
+        }
 
         const data = await response.json();
         if (!driveFileId) {
@@ -721,7 +729,6 @@
         console.error('Error saving to Drive:', err);
       }
     }
-
     /* ====================================================
        PWA INSTALLATION SETUP (Manifest & Service Worker)
     ==================================================== */
